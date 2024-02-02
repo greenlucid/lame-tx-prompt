@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lame Tx Prompt</title>
+  </head>
+  <body>
+    <script type="module">
+      const searchParams = new URLSearchParams(window.location.search)
+      async function sendTransaction() {
+        const addresses = await window.ethereum.request({
+          method: 'eth_requestAccounts'
+        })
+
+        const desiredNetworkId = Number(searchParams.get('chainId'))
+        const networkId = await window.ethereum.request({
+          method: 'eth_chainId'
+        })
+        console.log({ desiredNetworkId, networkId })
+
+        if (networkId !== desiredNetworkId) {
+          // Request a network switch to the desired chain
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x' + desiredNetworkId.toString(16) }]
+          })
+        }
+
+        const to = searchParams.get('to')
+        const data = searchParams.get('data')
+        const value = searchParams.get('value')
+
+        const tx = {
+          from: addresses[0],
+          to,
+          data,
+          value
+        }
+
+        const response = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [tx]
+        })
+      }
+
+      // Call the sendTransaction function when the page loads
+      sendTransaction()
+    </script>
+    <h3>not meant for regular use</h3>
+    <p>
+      frontend built to conveniently prompt arbitrary txs to a hardware wallet
+      previous method i was using involved opening etherscan, pasting values manually,
+      fiddling with silly wallet connection issues, sometimes requiring pasting the
+      parameters again. not ideal for serious system txs, disbursing rewards, or launching
+      a merkle root.
+    </p>
+    <p>
+      other horror stories: making txs in gnosis chain involved using blockscout, which was
+      hardcoded to only work with metamask, forcing me to use a different wallet,
+      and using a buggy frontend that often required connecting again, sometimes forced to retry
+      with 2 browsers due to a metamask bug that prevented connecting with a different wallet once a
+      wallet had already connected to blockscout already, sometimes requiring reinstalling metamask entirely.
+    </p>
+    <p>
+      when blockscout refactored and somehow managed to -break- the code that allowed making txs from
+      their frontend, i was forced to go to remix.ethereum.org, make a bogus contract with empty txs as interface,
+      compile, used the "At address" field, figure out the format remix expects strings, bytes, hexes, arrays...
+    </p>
+    <h3>this is an improvement</h3>
+    <p>
+      use at your own risk. put in the parameters defining the tx as query parameters. if you dont know why you're here
+      someone might be STEALING YOUR CRYPTO ASSETS, get away from this website, don't sign anything.
+    </p>
+    <p>
+      how i use this: a different script creates links to this site, automatically 
+      if the hardware wallet acts up, i can refresh the page and try again.
+    </p>
+  </body>
+</html>
